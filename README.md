@@ -29,7 +29,7 @@ See java-doc for more details about classes.
  
  Each turn we first set up integer inside of jobsCount equal to NUM_THREADS. 
  This means that threads have to perform at least NUM_THREADS jobs. 
- Indeed, each thread should at least move its "ones" inside of its part of the global field (FieldQuadrants#fieldQuad).
+ Indeed, each thread should at least move its "ones" inside of its part of the global field (FieldQuadrants.fieldQuad).
  Then, if some of the "ones" got to the left boundary, the threads put corresponding messages into 
  the message queues of other threads ("ones" jump to other field parts). 
  Before putting new message about new job, the thread increases jobsCount.
