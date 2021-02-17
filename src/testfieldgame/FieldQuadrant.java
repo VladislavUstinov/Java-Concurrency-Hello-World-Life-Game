@@ -265,3 +265,5 @@ final public class FieldQuadrant extends Thread {
         }
     }
 }
+
+//LockCond branch
