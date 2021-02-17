@@ -1,7 +1,7 @@
 # Java-Concurrency-Hello-World-Life-Game
 This is some exercise after reading Java Concurrency in Practice. I used BlockingQueue, pool of Threads, wait-notify, etc. Threads are acting together in a simplified Life Game.
 
-See java-doc for more details on each class. 
+See java-doc for more details about classes. 
 
 /**
  * The project is dedicated only to training in Java Concurrency. 
