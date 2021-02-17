@@ -1,6 +1,10 @@
 package testfieldgame;
 
 import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,7 +66,18 @@ final public class Game {
      * The wait-notify clause is used to connect main thread with threads' pool.
      */
     private final Counter jobsCount;
-          
+    
+    /**
+     * jobsCountLock is ReentrantLock. It should be initialized in main Game class.
+     */
+    private final Lock jobsCountLock;
+    
+    /**
+     * jobsCountLockCondition is a condition, made by jobsCountLock.newCondition () in main Game class.
+     * It is shared among all the threads in hte pool;
+     */
+    private final Condition jobsCountLockCondition;
+    
     /**
      * INITIAL_NUM_POINTS is amount of "ones" in the field.
      */
@@ -121,6 +136,8 @@ final public class Game {
         NUM_ITERATIONS = FIELD_LENGTH*NUM_THREADS;
         
         jobsCount = new Counter (NUM_THREADS);
+        jobsCountLock = new ReentrantLock();
+        jobsCountLockCondition = jobsCountLock.newCondition();
         
         fieldQuadrantAr = new FieldQuadrant [NUM_THREADS];
 
@@ -128,7 +145,7 @@ final public class Game {
         for (int i = 0; i < NUM_THREADS; i++) {
             int quadrantNum = i;
             int[][] fieldQuad = new int [x2-x1][y2-y1];
-            fieldQuadrantAr[i] = new FieldQuadrant(jobsCount, fieldQuad, x1, y1, x2, y2, quadrantNum, fieldQuadrantAr);
+            fieldQuadrantAr[i] = new FieldQuadrant(jobsCountLock, jobsCountLockCondition, jobsCount, fieldQuad, x1, y1, x2, y2, quadrantNum, fieldQuadrantAr);
             x1 = x2+1; x2 = x1+FIELD_LENGTH; y1 = 0; y2 = FIELD_LENGTH;
         }
                 
@@ -195,7 +212,20 @@ final public class Game {
             }
 
             try {
-                synchronized (jobsCount) { // very important that get is aslo in synchronized block!
+                jobsCountLock.lock();
+                
+                try {
+                    while (jobsCount.get() > 0) {
+                        jobsCountLockCondition.await();
+                    }
+                } finally {
+                    jobsCountLock.unlock();
+                }
+
+                if (jobsCount.get() < 0) {
+                    throw new Exception("MainStream: jobsCount.get() < 0");
+                }
+                /*synchronized (jobsCount) { // very important that get is aslo in synchronized block!
                     //very important that while has condition
                     while (jobsCount.get() > 0) {
                         jobsCount.wait();
@@ -204,7 +234,7 @@ final public class Game {
                     if (jobsCount.get() < 0) {
                         throw new Exception("MainStream: jobsCount.get() < 0");
                     }
-                }
+                }*/
             } catch (InterruptedException ex) {
                 Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
             } catch (Exception ex) {
@@ -224,9 +254,10 @@ final public class Game {
             }*/
             
             currentIteration ++;
-                /*String ans = scan.next();
-                if (ans.equals("q"))
-                break;*/
+/*            String ans = scan.next();
+            if (ans.equals("q")) {
+                break;
+            }*/
         }
 
         //printQuadrants();
@@ -247,9 +278,9 @@ final public class Game {
      * @param s is a string to be printed.
      */
     public static void safePrintln(String s) {
-       // synchronized (System.out) { //safe as long as nobody changes System.out via System.setOut
-       //     System.out.println(s);
-       // }
+        //synchronized (System.out) { //safe as long as nobody changes System.out via System.setOut
+        //    System.out.println(s);
+        //}
     }
 }
 //LockCond branch
