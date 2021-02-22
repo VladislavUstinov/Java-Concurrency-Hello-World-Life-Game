@@ -12,6 +12,7 @@ public class TestFieldGame {
      */
     public static void main(String[] args) {
         System.out.println("Hi!");
+        System.out.println("Hi from IntelliJ Idea and Git!");
     }
 }
 //asd
