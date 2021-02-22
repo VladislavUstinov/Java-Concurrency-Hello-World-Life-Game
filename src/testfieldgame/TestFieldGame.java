@@ -10,7 +10,8 @@ public class TestFieldGame {
     /**
      * See the {@link GameTest} JUnit test. It contains main launch of the {@link Game#start} function.
      */
-    public static void main(String[] args) {        
+    public static void main(String[] args) {
+        System.out.println("Hi!");
     }
 }
 //asd

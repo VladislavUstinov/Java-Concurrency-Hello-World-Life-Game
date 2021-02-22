@@ -82,7 +82,7 @@ public class GameTest extends Assert {
      * <p>
      * Asserts that intial global field is equal to the resulting global field. 
      * This should be true, because of periodic boundary condition applied.
-     * It depends on our choice of NUM_ITERATIONS = FIELD_LENGTH*NUM_THREADS in {@link Game#Game()}.
+     * It depends on our choice of NUM_ITERATIONS = FIELD_LENGTH*NUM_THREADS in {@link Game#Game}.
      * <p>
      * The {@link Game#start} method is called when parameters are given.
      * @param INITIAL_NUM_POINTS is amount of "ones" in the field.
