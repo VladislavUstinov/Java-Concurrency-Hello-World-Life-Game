@@ -1,6 +1,8 @@
 package testfieldgame;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,10 +63,22 @@ final public class FieldQuadrant extends Thread {
 
     /**
      * jobsCount is a variable shared among other FieldQuadrants in fieldQuadrantAr.
-     * It only should be used in synchronized (jobsCount) {...} blocks.
+     * It only should be used in locked via jobsCountLock blocks. 
+     * It should run jobsCountLockCondition.signal(), when being changed.
      */
     private final Counter jobsCount;
 
+    /**
+     * jobsCountLock is ReentrantLock. It should be initialized in main Game class.
+     */
+    private final Lock jobsCountLock;
+    
+    /**
+     * jobsCountLockCondition is a condition, made by jobsCountLock.newCondition () in main Game class.
+     * It is shared among all the threads in hte pool;
+     */
+    private final Condition jobsCountLockCondition;
+    
     /**
      * Queue ob messages with additional work, coming from other threads in a game.
      */
@@ -100,7 +114,7 @@ final public class FieldQuadrant extends Thread {
      */
     public FieldQuadrant getNewCloneWithOldLinks (){
                 
-        return new FieldQuadrant (jobsCount, fieldQuad, x1, y1, x2, y2, quadrantNum, fieldQuadrantAr);        
+        return new FieldQuadrant (jobsCountLock, jobsCountLockCondition, jobsCount, fieldQuad, x1, y1, x2, y2, quadrantNum, fieldQuadrantAr);        
     }
     
     public int getNY (){
@@ -157,10 +171,16 @@ final public class FieldQuadrant extends Thread {
         
         Game.safePrintln("Quadrant " + quadrantNum + " is taking additional msgs from queue");
         
-        synchronized (jobsCount) {
+        //synchronized (jobsCount) {
+        jobsCountLock.lock();
+        try{
             jobsCount.decrement();
-            jobsCount.notify();
+            //jobsCount.notify();
+            jobsCountLockCondition.signal();
+        }finally{
+            jobsCountLock.unlock();
         }
+        //}
         takeMessagesFromQueue ();
     }
     
@@ -177,10 +197,16 @@ final public class FieldQuadrant extends Thread {
                 //synchronized (fieldQuad) {
                     fieldQuad[pIndex.x][pIndex.y] = pIndex.val;
                 //}
-                synchronized (jobsCount) {
+                //synchronized (jobsCount) {
+                jobsCountLock.lock();
+                try{
                     jobsCount.decrement();
-                    jobsCount.notify();
+                    //jobsCount.notify();
+                    jobsCountLockCondition.signal();
+                }finally {
+                    jobsCountLock.unlock();
                 }
+                //}
             }
         } catch (InterruptedException ex) {
             //Logger.getLogger(FieldQuadrant.class.getName()).log(Level.SEVERE, null, ex);
@@ -223,9 +249,15 @@ final public class FieldQuadrant extends Thread {
      */
     public void setAfterMyTurnIndex (int i, int j, int val) {
         try {
-            synchronized (jobsCount) {
+            //synchronized (jobsCount) {
+            jobsCountLock.lock();
+            try{
                 jobsCount.increment();
+                jobsCountLockCondition.signal();
+            } finally {
+                jobsCountLock.unlock();
             }
+            //}
 
             Game.safePrintln("quadrant " + quadrantNum + " queue.put new msg");
             msgQueue.put(new Point (i,j,val));
@@ -236,8 +268,10 @@ final public class FieldQuadrant extends Thread {
         }
     }
         
-    public FieldQuadrant(Counter jobsCount, final int [][] fieldQuad, int x1, int y1, int x2, int y2, int quadrantNum, FieldQuadrant[] fieldQuadrantAr) {
+    public FieldQuadrant(Lock jobsCountLock, Condition jobsCountLockCondition, Counter jobsCount, final int [][] fieldQuad, int x1, int y1, int x2, int y2, int quadrantNum, FieldQuadrant[] fieldQuadrantAr) {
         
+        this.jobsCountLockCondition = jobsCountLockCondition;
+        this.jobsCountLock = jobsCountLock;
         this.jobsCount = jobsCount;
         this.fieldQuad = fieldQuad;//deepCopy(fieldQuad); //new int [x2-x1][y2-y1];
         this.nX = x2-x1;
@@ -265,3 +299,5 @@ final public class FieldQuadrant extends Thread {
         }
     }
 }
+
+//LockCond branch
